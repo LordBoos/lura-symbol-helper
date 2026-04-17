@@ -29,6 +29,8 @@ jobs:
       - name: Build Windows portable
         working-directory: ./client
         run: npm run build:win
+        env:
+          LURA_SERVER_URL: https://lura.boos.software
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -57,6 +59,8 @@ jobs:
       - name: Build macOS DMG (arm64)
         working-directory: ./client
         run: node scripts/set-server-url.js && npx electron-builder --mac dmg --arm64
+        env:
+          LURA_SERVER_URL: https://lura.boos.software
 
       - name: Upload macOS arm64 artifact
         uses: actions/upload-artifact@v4
@@ -85,6 +89,8 @@ jobs:
       - name: Build macOS DMG (x64)
         working-directory: ./client
         run: node scripts/set-server-url.js && npx electron-builder --mac dmg --x64
+        env:
+          LURA_SERVER_URL: https://lura.boos.software
 
       - name: Upload macOS x64 artifact
         uses: actions/upload-artifact@v4
