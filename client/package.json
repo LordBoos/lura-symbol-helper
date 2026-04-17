@@ -6,7 +6,10 @@
   "scripts": {
     "prebuild": "node scripts/set-server-url.js",
     "start": "electron .",
-    "build": "node scripts/set-server-url.js && electron-builder --win portable"
+    "build": "node scripts/set-server-url.js && electron-builder --win portable",
+    "build:win": "node scripts/set-server-url.js && electron-builder --win portable",
+    "build:mac": "node scripts/set-server-url.js && electron-builder --mac dmg",
+    "build:ci": "node scripts/set-server-url.js && electron-builder"
   },
   "build": {
     "appId": "com.lura.symbolhelper",
@@ -28,6 +31,20 @@
     },
     "portable": {
       "artifactName": "${productName}.exe"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.games",
+      "artifactName": "${productName}-${arch}.${ext}"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${arch}.dmg"
     },
     "files": [
       "src/**/*",
