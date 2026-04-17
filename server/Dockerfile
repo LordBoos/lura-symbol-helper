@@ -15,10 +15,14 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 COPY src/public/ ./dist/public/
+
+# Run as non-root user (node user is built into the image)
+RUN chown -R node:node /app
+USER node
 
 EXPOSE 3000
 

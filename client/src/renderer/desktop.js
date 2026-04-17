@@ -20,8 +20,14 @@ function applyTranslations() {
   document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
     el.placeholder = t(el.dataset.i18nPlaceholder);
   });
-  // How to use text with <br>
-  $('howToUseText').innerHTML = t('howToUseText').replace(/\n/g, '<br>');
+  // How to use text with <br> - built safely via DOM API
+  const howToEl = $('howToUseText');
+  howToEl.textContent = '';
+  const lines = t('howToUseText').split('\n');
+  lines.forEach((line, i) => {
+    howToEl.appendChild(document.createTextNode(line));
+    if (i < lines.length - 1) howToEl.appendChild(document.createElement('br'));
+  });
   // Update lang buttons
   $('langCs').classList.toggle('active', getLang() === 'cs');
   $('langEn').classList.toggle('active', getLang() === 'en');
@@ -190,9 +196,23 @@ function updateUI() {
     playerList.innerHTML = '';
     (session.players || []).forEach((p) => {
       const li = document.createElement('li');
-      li.innerHTML = p.isLeader
-        ? `<span class="leader-icon">\u2605</span><span class="player-name">${p.name}</span><span class="leader-tag">${t('leader')}</span>`
-        : `<span class="leader-icon" style="visibility:hidden">\u2605</span><span class="player-name">${p.name}</span>`;
+      const icon = document.createElement('span');
+      icon.className = 'leader-icon';
+      icon.textContent = '\u2605';
+      if (!p.isLeader) icon.style.visibility = 'hidden';
+      li.appendChild(icon);
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'player-name';
+      nameEl.textContent = String(p.name || '');
+      li.appendChild(nameEl);
+
+      if (p.isLeader) {
+        const tag = document.createElement('span');
+        tag.className = 'leader-tag';
+        tag.textContent = t('leader');
+        li.appendChild(tag);
+      }
       playerList.appendChild(li);
     });
   }
