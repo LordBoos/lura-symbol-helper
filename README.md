@@ -96,7 +96,3 @@ Without the variable, the default is `http://localhost:3000`. Users can always c
 5. Leader clicks symbols to set the sequence, all players see it in real-time
 6. WoW must run in **Windowed Fullscreen** mode for the overlay to work
 7. Use the configurable hotkey to toggle the overlay
-
-## License
-
-MIT
