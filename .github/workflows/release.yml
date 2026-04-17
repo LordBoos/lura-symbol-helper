@@ -34,11 +34,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Download macOS artifact
+      - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v4
         with:
-          name: Lura-Symbol-Helper-macOS
-          path: ./artifacts/mac
+          name: Lura-Symbol-Helper-macOS-arm64
+          path: ./artifacts/mac-arm64
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download macOS x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Lura-Symbol-Helper-macOS-x64
+          path: ./artifacts/mac-x64
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
@@ -56,8 +64,8 @@ jobs:
             | Platform | File |
             |----------|------|
             | Windows | `Lura Symbol Helper.exe` |
-            | macOS (Intel) | `Lura Symbol Helper-x64.dmg` |
             | macOS (Apple Silicon) | `Lura Symbol Helper-arm64.dmg` |
+            | macOS (Intel) | `Lura Symbol Helper-x64.dmg` |
 
             ### Notes
             - Windows: SmartScreen may warn on first launch — click "More info" → "Run anyway"
@@ -65,6 +73,7 @@ jobs:
             - Default server: `http://localhost:3000` (change in app settings)
           files: |
             ./artifacts/windows/*
-            ./artifacts/mac/*
+            ./artifacts/mac-arm64/*
+            ./artifacts/mac-x64/*
           draft: false
           prerelease: false
