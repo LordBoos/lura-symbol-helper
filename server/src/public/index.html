@@ -36,6 +36,29 @@
       font-weight: 600; cursor: pointer;
     }
     .lang-switch button:hover { background: #1a4a7a; color: #ccc; }
+
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .gh-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      color: #888; font-size: 12px; text-decoration: none;
+      padding: 4px 8px; border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .gh-link:hover { color: #ccc; background: rgba(255,255,255,0.05); }
+    .gh-link svg { width: 16px; height: 16px; fill: currentColor; }
+
+    .download-section { text-align: center; }
+    .download-section h2 { margin-bottom: 8px; }
+    .download-links { display: flex; flex-direction: column; gap: 8px; }
+    .download-link {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: #0f3460; color: #e0e0e0; text-decoration: none;
+      padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      transition: background 0.2s;
+    }
+    .download-link:hover { background: #1a4a7a; }
+    .download-link svg { width: 18px; height: 18px; fill: currentColor; }
+    .download-link .platform { color: #4FC3F7; }
     .lang-switch button.active { background: #4FC3F7; color: #1a1a2e; }
 
     .container {
@@ -148,9 +171,14 @@
       <span class="star">&#9733;</span>
       <h1>Lura Symbol Helper</h1>
     </div>
-    <div class="lang-switch">
-      <button id="langCs" class="active">CZ</button>
-      <button id="langEn">EN</button>
+    <div class="header-right">
+      <a class="gh-link" href="https://github.com/LordBoos/lura-symbol-helper" target="_blank" title="GitHub">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      </a>
+      <div class="lang-switch">
+        <button id="langCs" class="active">CZ</button>
+        <button id="langEn">EN</button>
+      </div>
     </div>
   </div>
 
@@ -159,6 +187,13 @@
       <div class="status-bar">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText" style="font-size:13px;color:#aaa;">Připojování...</span>
+      </div>
+    </div>
+
+    <div class="section download-section" id="downloadSection">
+      <h2 data-i18n="downloadApp">Stáhnout aplikaci</h2>
+      <div class="download-links" id="downloadLinks">
+        <span style="color:#555;font-size:13px;" data-i18n="loadingReleases">Načítám...</span>
       </div>
     </div>
 
@@ -209,6 +244,10 @@
         sessionId: 'ID RELACE', players: 'hr\u00e1\u010d\u016f',
         waiting: '\u010cek\u00e1m na sekvenci od raid leadera...',
         leaveSession: 'Opustit relaci', language: 'Jazyk',
+        downloadApp: 'St\u00e1hnout aplikaci',
+        loadingReleases: 'Na\u010d\u00edt\u00e1m...',
+        noReleases: '\u017d\u00e1dn\u00e9 vyd\u00e1n\u00ed nen\u00ed k dispozici',
+        windows: 'Windows', macIntel: 'macOS (Intel)', macArm: 'macOS (Apple Silicon)',
       },
       en: {
         connecting: 'Connecting...', connected: 'Connected', disconnected: 'Disconnected',
@@ -217,6 +256,10 @@
         sessionId: 'SESSION ID', players: 'players',
         waiting: 'Waiting for sequence from raid leader...',
         leaveSession: 'Leave session', language: 'Language',
+        downloadApp: 'Download app',
+        loadingReleases: 'Loading...',
+        noReleases: 'No releases available',
+        windows: 'Windows', macIntel: 'macOS (Intel)', macArm: 'macOS (Apple Silicon)',
       },
     };
 
@@ -231,8 +274,8 @@
       document.getElementById('langEn').classList.toggle('active', getLang() === 'en');
     }
 
-    document.getElementById('langCs').addEventListener('click', () => { setLang('cs'); applyTranslations(); updateStatusText(); });
-    document.getElementById('langEn').addEventListener('click', () => { setLang('en'); applyTranslations(); updateStatusText(); });
+    document.getElementById('langCs').addEventListener('click', () => { setLang('cs'); applyTranslations(); updateStatusText(); loadReleases(); });
+    document.getElementById('langEn').addEventListener('click', () => { setLang('en'); applyTranslations(); updateStatusText(); loadReleases(); });
 
     function updateStatusText() {
       if (socket && socket.connected) {
@@ -362,8 +405,57 @@
       if (document.visibilityState === 'visible' && session.sessionId) requestWakeLock();
     });
 
+    // Fetch latest GitHub release
+    const REPO = 'LordBoos/lura-symbol-helper';
+    async function loadReleases() {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+        if (!res.ok) throw new Error('No release');
+        const release = await res.json();
+        const assets = release.assets || [];
+
+        const winAsset = assets.find(a => a.name.endsWith('.exe'));
+        const macArmAsset = assets.find(a => a.name.includes('arm64') && a.name.endsWith('.dmg'));
+        const macX64Asset = assets.find(a => a.name.includes('x64') && a.name.endsWith('.dmg'));
+
+        const container = $('downloadLinks');
+        container.innerHTML = '';
+
+        const svgWin = '<svg viewBox="0 0 16 16"><path d="M0 2.3l6.5-.9v6.3H0zm7.3-1L15.8.1v7.6H7.3zM15.8 8.4V16l-8.5-1.2V8.4zm-9.3 0v6.2L0 13.7V8.4z"/></svg>';
+        const svgMac = '<svg viewBox="0 0 16 16"><path d="M11.2 1.4c-.7.8-1.8 1.4-2.8 1.3-.1-1.1.4-2.3 1.1-3 .7-.8 1.9-1.4 2.9-1.4.1 1.2-.4 2.3-1.2 3.1zM12 4.5c-1.6-.1-3 .9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1.9-4 2.4-1.7 2.9-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3.1 2.4 1.2-.1 1.7-.8 3.1-.8s1.9.8 3.2.7c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.5-1-2.5-3.8 0-2.4 2-3.5 2.1-3.6-1.2-1.7-3-1.9-3.6-1.9z"/></svg>';
+
+        if (winAsset) {
+          const a = document.createElement('a');
+          a.className = 'download-link';
+          a.href = winAsset.browser_download_url;
+          a.innerHTML = svgWin + ' <span class="platform">' + t('windows') + '</span>';
+          container.appendChild(a);
+        }
+        if (macArmAsset) {
+          const a = document.createElement('a');
+          a.className = 'download-link';
+          a.href = macArmAsset.browser_download_url;
+          a.innerHTML = svgMac + ' <span class="platform">' + t('macArm') + '</span>';
+          container.appendChild(a);
+        }
+        if (macX64Asset) {
+          const a = document.createElement('a');
+          a.className = 'download-link';
+          a.href = macX64Asset.browser_download_url;
+          a.innerHTML = svgMac + ' <span class="platform">' + t('macIntel') + '</span>';
+          container.appendChild(a);
+        }
+        if (!winAsset && !macArmAsset && !macX64Asset) {
+          container.innerHTML = '<span style="color:#555;font-size:13px;">' + t('noReleases') + '</span>';
+        }
+      } catch (e) {
+        $('downloadLinks').innerHTML = '<span style="color:#555;font-size:13px;">' + t('noReleases') + '</span>';
+      }
+    }
+
     applyTranslations();
     connect();
+    loadReleases();
   </script>
 </body>
 </html>

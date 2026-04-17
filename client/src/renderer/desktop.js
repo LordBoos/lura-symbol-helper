@@ -1,5 +1,7 @@
-const { ipcRenderer, clipboard } = require('electron');
+const { ipcRenderer, clipboard, shell } = require('electron');
 const { t, getLang, setLang } = require('../i18n');
+
+const GITHUB_URL = 'https://github.com/LordBoos/lura-symbol-helper';
 
 let connectionState = 'disconnected';
 let session = { sessionId: null, isLeader: false, playerCount: 0, players: [], sequence: [] };
@@ -45,6 +47,7 @@ playerNameInput.value = localStorage.getItem(NAME_KEY) || '';
 
 $('minimizeBtn').addEventListener('click', () => ipcRenderer.send('window-minimize'));
 $('closeBtn').addEventListener('click', () => ipcRenderer.send('window-close'));
+$('ghLink').addEventListener('click', () => shell.openExternal(GITHUB_URL));
 
 // --- IPC ---
 ipcRenderer.on('state-update', (_event, state) => {
