@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Lura Overlay</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 380px;
+      height: auto;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: transparent;
+      color: #e0e0e0;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .overlay-container {
+      width: 380px;
+      background: rgba(10, 10, 26, 0.92);
+      border-radius: 12px;
+      border: 1px solid rgba(79, 195, 247, 0.3);
+      overflow: hidden;
+    }
+
+    /* Drag bar */
+    .drag-bar {
+      background: rgba(22, 33, 62, 0.95);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid rgba(15, 52, 96, 0.6);
+    }
+    .drag-bar .title {
+      font-size: 13px; font-weight: 600; color: #4FC3F7;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .drag-bar .info {
+      display: flex; align-items: center; gap: 10px; font-size: 12px;
+      -webkit-app-region: no-drag;
+    }
+
+    .session-badge {
+      background: rgba(79, 195, 247, 0.15); color: #4FC3F7;
+      padding: 2px 8px; border-radius: 4px;
+      font-family: 'Consolas', monospace; font-size: 12px;
+      font-weight: bold; letter-spacing: 1px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .session-badge:hover { background: rgba(79, 195, 247, 0.3); }
+
+    .player-badge {
+      color: #81C784; display: flex; align-items: center; gap: 3px;
+    }
+
+    /* ===== TOP: Boss display with semicircle positions ===== */
+    .boss-display {
+      position: relative;
+      width: 340px;
+      height: 200px;
+      margin: 12px auto 0;
+    }
+
+    .boss-center {
+      position: absolute;
+      top: 65px; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: rgba(22, 33, 62, 0.8);
+      border: 2px solid rgba(79, 195, 247, 0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #666;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* 5 position slots in a semicircle above the boss.
+       Slot 0 = rightmost (first entered), slot 4 = leftmost (last entered).
+       Arc from -10deg (right) to 190deg (left), so positions at
+       -10, 40, 90, 140, 190 degrees measured from right. */
+    .pos-slot {
+      position: absolute;
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      background: rgba(22, 33, 62, 0.5);
+      border: 2px dashed rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center; justify-content: center;
+      transform: translate(-50%, -50%);
+      transition: all 0.25s;
+    }
+    .pos-slot.filled {
+      border-style: solid;
+      border-width: 3px;
+      background: rgba(22, 33, 62, 0.9);
+    }
+    .pos-slot .slot-icon { line-height: 0; }
+    .pos-slot .slot-icon { line-height: 0; }
+    .pos-slot .slot-num {
+      position: absolute; top: -6px; right: -6px;
+      width: 20px; height: 20px; border-radius: 50%;
+      color: #1a1a2e; font-size: 11px; font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transform: scale(0); transition: all 0.2s;
+    }
+    .pos-slot .slot-num.visible { opacity: 1; transform: scale(1); }
+    .pos-slot .slot-label {
+      position: absolute;
+      bottom: -14px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 8px; color: #555; white-space: nowrap;
+    }
+
+    /* Semicircle positions: center bottom = boss, arc above.
+       Radius ~90px from boss center (bottom: 38px, so boss cy ~162).
+       Angles: slot0=10deg, slot1=50deg, slot2=90deg, slot3=130deg, slot4=170deg
+       (measured from right, counterclockwise) */
+    /* Semicircle: center at (170, 65), radius 100px,
+       angles 0° (right) to 180° (left) in equal 45° steps */
+    .pos-slot[data-slot="0"] { left: 270px; top:  65px; } /* 0° rightmost */
+    .pos-slot[data-slot="1"] { left: 241px; top: 136px; } /* 45° */
+    .pos-slot[data-slot="2"] { left: 170px; top: 165px; } /* 90° bottom center */
+    .pos-slot[data-slot="3"] { left:  99px; top: 136px; } /* 135° */
+    .pos-slot[data-slot="4"] { left:  70px; top:  65px; } /* 180° leftmost */
+
+    /* Connector lines (purely visual) */
+    .arc-line { display: none; }
+
+    .picker-label {
+      text-align: center; color: #555; font-size: 11px;
+      padding: 6px 0 2px;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* ===== BOTTOM: Clickable symbol buttons ===== */
+    .symbol-picker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 16px 10px;
+    }
+
+    .pick-btn {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: rgba(22, 33, 62, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: default;
+      transition: all 0.15s;
+    }
+    .pick-btn.clickable { cursor: pointer; }
+    .pick-btn.clickable:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(22, 33, 62, 1);
+      transform: scale(1.12);
+    }
+    .pick-btn { position: relative; }
+    .pick-btn .icon-img { width: 48px; height: 48px; border-radius: 50%; pointer-events: none; }
+    .pick-btn .label {
+      position: absolute;
+      bottom: -14px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 8px; color: #888; white-space: nowrap;
+    }
+
+    /* Controls */
+    .controls {
+      padding: 4px 16px 12px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .controls button {
+      background: rgba(22, 33, 62, 0.9); color: #e0e0e0;
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px;
+      padding: 5px 12px; font-size: 11px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .controls button:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(22, 33, 62, 1);
+    }
+    .controls button.clear-btn { border-color: rgba(229, 115, 115, 0.4); color: #E57373; }
+    .controls button.clear-btn:hover { background: rgba(229, 115, 115, 0.15); }
+
+    .no-session-msg {
+      text-align: center; padding: 40px 20px; color: #666; font-size: 13px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+    <div class="drag-bar">
+      <div class="title">
+        <span>&#9733;</span>
+        <span>Lura</span>
+      </div>
+      <div class="info">
+        <span class="session-badge" id="sessionBadge" title="Click to copy">------</span>
+        <span class="player-badge">
+          <span>&#128101;</span>
+          <span id="overlayPlayerCount">0</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="no-session-msg" id="noSessionMsg">
+      <p data-i18n="notConnected">Nepřipojeno k relaci.</p>
+      <p style="margin-top: 8px;" data-i18n="useMainWindow">Použijte hlavní okno pro vytvoření nebo připojení k relaci.</p>
+    </div>
+
+    <div id="symbolArea" class="hidden">
+      <!-- TOP: Boss + semicircle display -->
+      <div class="boss-display">
+        <div class="arc-line"></div>
+        <div class="pos-slot" data-slot="0"><span class="slot-icon"></span><span class="slot-num"></span><span class="slot-label">1st</span></div>
+        <div class="pos-slot" data-slot="1"><span class="slot-icon"></span><span class="slot-num"></span><span class="slot-label">2nd</span></div>
+        <div class="pos-slot" data-slot="2"><span class="slot-icon"></span><span class="slot-num"></span><span class="slot-label">3rd</span></div>
+        <div class="pos-slot" data-slot="3"><span class="slot-icon"></span><span class="slot-num"></span><span class="slot-label">4th</span></div>
+        <div class="pos-slot" data-slot="4"><span class="slot-icon"></span><span class="slot-num"></span><span class="slot-label">5th</span></div>
+        <div class="boss-center">BOSS</div>
+      </div>
+
+      <!-- Label between display and picker -->
+      <div class="picker-label" id="pickerLabel" data-i18n="clickSymbols">Klikněte na symboly pro nastavení sekvence</div>
+
+      <!-- BOTTOM: Clickable symbol picker -->
+      <div class="symbol-picker" id="symbolPicker">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Leader controls -->
+      <div class="controls hidden" id="leaderControls">
+        <button id="undoBtn" data-i18n="undo">&#8617; Zpět</button>
+        <button id="clearBtn" class="clear-btn" data-i18n="clear">&#10005; Vymazat</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="overlay.js"></script>
+</body>
+</html>

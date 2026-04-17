@@ -1,0 +1,54 @@
+{
+  "name": "lura-symbol-helper",
+  "version": "1.0.0",
+  "description": "Real-time symbol sequence sharing overlay for WoW raid coordination",
+  "main": "src/main.js",
+  "scripts": {
+    "prebuild": "node scripts/set-server-url.js",
+    "start": "electron .",
+    "build": "node scripts/set-server-url.js && electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.lura.symbolhelper",
+    "productName": "Lura Symbol Helper",
+    "directories": {
+      "output": "release"
+    },
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": ["en-US", "cs"],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "portable": {
+      "artifactName": "${productName}.exe"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "!node_modules/**/*.md",
+      "!node_modules/**/*.map",
+      "!node_modules/**/*.ts",
+      "!node_modules/**/test/**",
+      "!node_modules/**/tests/**",
+      "!node_modules/**/.github/**",
+      "!node_modules/**/example/**",
+      "!node_modules/**/examples/**",
+      "!node_modules/**/docs/**"
+    ]
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.0"
+  }
+}
