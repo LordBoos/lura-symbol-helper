@@ -70,7 +70,7 @@ jobs:
           retention-days: 90
 
   build-mac-x64:
-    runs-on: macos-13
+    runs-on: macos-26-intel
 
     steps:
       - uses: actions/checkout@v4
